@@ -6,15 +6,14 @@ on:
       - snapshot
 
 jobs:
-  build-windows:
+  build-win64:
     env:
       BASEKIT_ID: 19078
       BASEKIT_NAME: w_BaseKit_p_2023.0.0.25940_offline
       HPCKIT_ID: 19085
       HPCKIT_NAME: w_HPCKit_p_2023.0.0.25931_offline
       ONEAPI_ROOT: C:\Program Files (x86)\Intel\oneAPI
-      VCPKG_VERSION: 2023.01.09
-      VCPKG_ROOT: C:\opt\vcpkg
+      VCPKG_ROOT: C:\vcpkg
 
     runs-on: windows-latest
 
@@ -37,22 +36,13 @@ jobs:
             C:\Program Files (x86)\Intel\oneAPI\mpi
             C:\Program Files (x86)\Intel\oneAPI\setvars.bat
             C:\Program Files (x86)\Intel\oneAPI\setvars-vcvarsall.bat
-            C:\opt\vcpkg\installed
-            C:\opt\vcpkg\scripts
-            C:\opt\vcpkg\triplets
-            C:\opt\vcpkg\vcpkg.exe
-          key: ${{ runner.os }}-${{ env.BASEKIT_ID }}-${{ env.HPCKIT_ID }}-${{ env.VCPKG_VERSION }}
+            C:\vcpkg\installed
+          key: ${{ runner.os }}-${{ env.BASEKIT_ID }}-${{ env.HPCKIT_ID }}
 
       - name: Install Dependencies
         if: steps.cache-oneapi.outputs.cache-hit != 'true'
         run: |
-          mkdir C:\opt\vcpkg
-          cd C:\opt\vcpkg
-          curl -SL --output vcpkg.zip https://github.com/microsoft/vcpkg/archive/refs/tags/${{ env.VCPKG_VERSION }}.zip
-          start /b /wait tar -xf vcpkg.zip --strip-components=1
-          bootstrap-vcpkg.bat -disableMetrics
-          call "%VCINSTALLDIR%\Auxiliary\Build\vcvars64.bat"
-          C:\opt\vcpkg\vcpkg.exe install --clean-after-build --triplet x64-windows-static benchmark fmt gtest spdlog
+          vcpkg install --clean-after-build --triplet x64-windows-static benchmark boost fmt gtest spdlog
 
       - name: Install oneAPI BaseKit
         if: steps.cache-oneapi.outputs.cache-hit != 'true'
@@ -88,9 +78,9 @@ jobs:
           name: magi-snapshot-windows-x64
           path: ccjob-win64.zip
 
-  generate-release:
+  artifact:
     runs-on: ubuntu-latest
-    needs: [build-windows]
+    needs: [build-win64]
     outputs:
       release-upload-url: ${{ steps.create_release.outputs.upload_url }}
     steps:
@@ -108,9 +98,9 @@ jobs:
           draft: false
           prerelease: false
 
-  upload-artifacts-to-release:
+  release:
     runs-on: ubuntu-latest
-    needs: [generate-release]
+    needs: [artifact]
     steps:
       - name: Download Windows Artifacts
         uses: actions/download-artifact@v3
@@ -122,7 +112,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ needs.generate-release.outputs.release-upload-url }}
+          upload_url: ${{ needs.release.outputs.release-upload-url }}
           asset_path: ccjob-win64.zip
           asset_name: ccjob-win64.zip
           asset_content_type: application/zip
