@@ -12,6 +12,7 @@ jobs:
       BASEKIT_NAME: w_BaseKit_p_2023.0.0.25940_offline
       HPCKIT_ID: 19085
       HPCKIT_NAME: w_HPCKit_p_2023.0.0.25931_offline
+      ONEAPI_ROOT: C:\Program Files (x86)\Intel\oneAPI
       VCPKG_VERSION: 2023.01.09
       VCPKG_ROOT: C:\opt\vcpkg
 
@@ -65,12 +66,12 @@ jobs:
           curl -SL --output vcpkg.zip https://github.com/microsoft/vcpkg/archive/refs/tags/${{ env.VCPKG_VERSION }}.zip
           start /b /wait tar -xf vcpkg.zip --strip-components=1
           bootstrap-vcpkg.bat -disableMetrics
-          call "%ONEAPI_ROOT%setvars.bat"
+          call "C:\Program Files (x86)\Intel\oneAPI\setvars.bat"
           C:\opt\vcpkg\vcpkg.exe install --clean-after-build --triplet x64-windows-static benchmark fmt gtest spdlog
 
       - name: Build Snapshot Binary
         run: |
-          call "%ONEAPI_ROOT%setvars.bat"
+          call "C:\Program Files (x86)\Intel\oneAPI\setvars.bat"
           cmake --preset Windows-Intel-Release
           cmake --build --preset Windows-Intel-Release
 
