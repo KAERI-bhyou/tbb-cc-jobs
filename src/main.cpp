@@ -4,7 +4,7 @@
 int main()
 {
     Mod mod;
-    std::cout << "Hello\n";
+    mod.run();
 
     return EXIT_SUCCESS;
 }
