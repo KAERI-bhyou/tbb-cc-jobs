@@ -5,7 +5,7 @@ project(
     LANGUAGES CXX)
 
 set(target "ccjob")
-set(CCJOB_TEST CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION_MAXIMUM)
+set(CCJOB_TEST false)
 
 include(cmake/CompileOptions.cmake)
 include(cmake/Dependencies.cmake)

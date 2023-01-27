@@ -37,8 +37,22 @@ jobs:
             C:\Program Files (x86)\Intel\oneAPI\mpi
             C:\Program Files (x86)\Intel\oneAPI\setvars.bat
             C:\Program Files (x86)\Intel\oneAPI\setvars-vcvarsall.bat
-            C:\opt\vcpkg
+            C:\opt\vcpkg\installed
+            C:\opt\vcpkg\scripts
+            C:\opt\vcpkg\triplets
+            C:\opt\vcpkg\vcpkg.exe
           key: ${{ runner.os }}-${{ env.BASEKIT_ID }}-${{ env.HPCKIT_ID }}-${{ env.VCPKG_VERSION }}
+
+      - name: Install Dependencies
+        if: steps.cache-oneapi.outputs.cache-hit != 'true'
+        run: |
+          mkdir C:\opt\vcpkg
+          cd C:\opt\vcpkg
+          curl -SL --output vcpkg.zip https://github.com/microsoft/vcpkg/archive/refs/tags/${{ env.VCPKG_VERSION }}.zip
+          start /b /wait tar -xf vcpkg.zip --strip-components=1
+          bootstrap-vcpkg.bat -disableMetrics
+          call "%VCINSTALLDIR%\Auxiliary\Build\vcvars64.bat"
+          C:\opt\vcpkg\vcpkg.exe install --clean-after-build --triplet x64-windows-static benchmark fmt gtest spdlog
 
       - name: Install oneAPI BaseKit
         if: steps.cache-oneapi.outputs.cache-hit != 'true'
@@ -57,17 +71,6 @@ jobs:
           del /q oneapi_hpckit.exe
           hpckit_extracted\bootstrapper.exe --silent --eula=accept --action=install --components=intel.oneapi.win.cpp-compiler:intel.oneapi.win.ifort-compiler:intel.oneapi.win.mpi.devel -p=NEED_VS2017_INTEGRATION=0 -p=NEED_VS2019_INTEGRATION=0 -p=NEED_VS2022_INTEGRATION=0
           del /s /q hpckit_extracted
-
-      - name: Install Dependencies
-        if: steps.cache-oneapi.outputs.cache-hit != 'true'
-        run: |
-          mkdir C:\opt\vcpkg
-          cd C:\opt\vcpkg
-          curl -SL --output vcpkg.zip https://github.com/microsoft/vcpkg/archive/refs/tags/${{ env.VCPKG_VERSION }}.zip
-          start /b /wait tar -xf vcpkg.zip --strip-components=1
-          bootstrap-vcpkg.bat -disableMetrics
-          call "C:\Program Files (x86)\Intel\oneAPI\setvars.bat"
-          C:\opt\vcpkg\vcpkg.exe install --clean-after-build --triplet x64-windows-static benchmark fmt gtest spdlog
 
       - name: Build Snapshot Binary
         run: |
