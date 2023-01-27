@@ -4,6 +4,9 @@
         {
             "name": "Windows-Intel-Base",
             "hidden": true,
+            "description": "C = icx / CXX = icx / Fortran = ifort",
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "generator": "Ninja",
             "cacheVariables": {
                 "CMAKE_C_COMPILER": "icx.exe",
                 "CMAKE_CXX_COMPILER": "icx.exe",
@@ -22,9 +25,6 @@
             "name": "Windows-Intel-Debug",
             "inherits": "Windows-Intel-Base",
             "displayName": "Windows-Intel-Debug",
-            "description": "C = icx / CXX = icx / Fortran = ifort",
-            "binaryDir": "${sourceDir}/build/${presetName}",
-            "generator": "Ninja",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug"
             }
@@ -33,9 +33,6 @@
             "name": "Windows-Intel-Release",
             "inherits": "Windows-Intel-Base",
             "displayName": "Windows-Intel-Release",
-            "description": "C = icx / CXX = icx / Fortran = ifort",
-            "binaryDir": "${sourceDir}/build/${presetName}",
-            "generator": "Ninja",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release"
             }
@@ -43,6 +40,9 @@
         {
             "name": "Linux-Intel-Base",
             "hidden": true,
+            "description": "C = icx / CXX = icpx / Fortran = ifort",
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "generator": "Ninja",
             "cacheVariables": {
                 "CMAKE_C_COMPILER": "/opt/intel/oneapi/compiler/latest/linux/bin/icx",
                 "CMAKE_CXX_COMPILER": "/opt/intel/oneapi/compiler/latest/linux/bin/icpx",
@@ -60,9 +60,6 @@
             "name": "Linux-Intel-Debug",
             "inherits": "Linux-Intel-Base",
             "displayName": "Linux-Intel-Debug",
-            "description": "C = icx / CXX = icpx / Fortran = ifort",
-            "binaryDir": "${sourceDir}/build/${presetName}",
-            "generator": "Ninja",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug"
             }
@@ -71,9 +68,6 @@
             "name": "Linux-Intel-Release",
             "inherits": "Linux-Intel-Base",
             "displayName": "Linux-Intel-Release",
-            "description": "C = icx / CXX = icpx / Fortran = ifort",
-            "binaryDir": "${sourceDir}/build/${presetName}",
-            "generator": "Ninja",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release"
             }
