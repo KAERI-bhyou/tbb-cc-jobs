@@ -1,0 +1,124 @@
+name: Snapshot
+
+on:
+  push:
+    branches:
+      - snapshot
+
+jobs:
+  build-windows:
+    env:
+      BASEKIT_ID: 19078
+      BASEKIT_NAME: w_BaseKit_p_2023.0.0.25940_offline
+      HPCKIT_ID: 19085
+      HPCKIT_NAME: w_HPCKit_p_2023.0.0.25931_offline
+      VCPKG_VERSION: 2023.01.09
+      VCPKG_ROOT: C:\opt\vcpkg
+
+    runs-on: windows-latest
+
+    defaults:
+      run:
+        shell: cmd
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Cache oneAPI
+        id: cache-oneapi
+        uses: actions/cache@v3
+        with:
+          path: |
+            C:\Program Files (x86)\Intel\oneAPI\compiler
+            C:\Program Files (x86)\Intel\oneAPI\mkl
+            C:\Program Files (x86)\Intel\oneAPI\tbb
+            C:\Program Files (x86)\Intel\oneAPI\mpi
+            C:\Program Files (x86)\Intel\oneAPI\setvars.bat
+            C:\Program Files (x86)\Intel\oneAPI\setvars-vcvarsall.bat
+            C:\opt\vcpkg
+          key: ${{ runner.os }}-${{ env.BASEKIT_ID }}-${{ env.HPCKIT_ID }}-${{ env.VCPKG_VERSION }}
+
+      - name: Install oneAPI BaseKit
+        if: steps.cache-oneapi.outputs.cache-hit != 'true'
+        run: |
+          curl -SL --output oneapi_basekit.exe https://registrationcenter-download.intel.com/akdlm/IRC_NAS/${{ env.BASEKIT_ID }}/${{ env.BASEKIT_NAME }}.exe
+          oneapi_basekit.exe --silent --extract-only --extract-folder basekit_extracted
+          del /q oneapi_basekit.exe
+          basekit_extracted\bootstrapper.exe --silent --eula=accept --action=install --components=intel.oneapi.win.tbb.devel:intel.oneapi.win.dpcpp-compiler:intel.oneapi.win.mkl.devel -p=NEED_VS2017_INTEGRATION=0 -p=NEED_VS2019_INTEGRATION=0 -p=NEED_VS2022_INTEGRATION=0
+          del /s /q basekit_extracted
+
+      - name: Install oneAPI HPCKit
+        if: steps.cache-oneapi.outputs.cache-hit != 'true'
+        run: |
+          curl -SL --output oneapi_hpckit.exe https://registrationcenter-download.intel.com/akdlm/IRC_NAS/${{ env.HPCKIT_ID }}/${{ env.HPCKIT_NAME }}.exe
+          oneapi_hpckit.exe --silent --extract-only --extract-folder hpckit_extracted
+          del /q oneapi_hpckit.exe
+          hpckit_extracted\bootstrapper.exe --silent --eula=accept --action=install --components=intel.oneapi.win.cpp-compiler:intel.oneapi.win.ifort-compiler:intel.oneapi.win.mpi.devel -p=NEED_VS2017_INTEGRATION=0 -p=NEED_VS2019_INTEGRATION=0 -p=NEED_VS2022_INTEGRATION=0
+          del /s /q hpckit_extracted
+
+      - name: Install Dependencies
+        if: steps.cache-oneapi.outputs.cache-hit != 'true'
+        run: |
+          mkdir C:\opt\vcpkg
+          cd C:\opt\vcpkg
+          curl -SL --output vcpkg.zip https://github.com/microsoft/vcpkg/archive/refs/tags/${{ env.VCPKG_VERSION }}.zip
+          start /b /wait tar -xf vcpkg.zip --strip-components=1
+          bootstrap-vcpkg.bat -disableMetrics
+          call "%ONEAPI_ROOT%setvars.bat"
+          C:\opt\vcpkg\vcpkg.exe install --clean-after-build --triplet x64-windows-static benchmark fmt gtest spdlog
+
+      - name: Build Snapshot Binary
+        run: |
+          call "%ONEAPI_ROOT%setvars.bat"
+          cmake --preset Windows-Intel-Release
+          cmake --build --preset Windows-Intel-Release
+
+      - name: Make a snapshot archive
+        run: |
+          tar -c -f ccjob-win64.zip bin/ccjob.exe
+
+      - name: Make an Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: magi-snapshot-windows-x64
+          path: ccjob-win64.zip
+
+  generate-release:
+    runs-on: ubuntu-latest
+    needs: [build-windows]
+    outputs:
+      release-upload-url: ${{ steps.create_release.outputs.upload_url }}
+    steps:
+      - name: Get Commit ID
+        id: commit
+        uses: pr-mpt/actions-commit-hash@v2
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.TOKEN }}
+        with:
+          tag_name: ${{ steps.commit.outputs.short }}
+          release_name: Release ${{ steps.commit.outputs.short }}
+          draft: false
+          prerelease: false
+
+  upload-artifacts-to-release:
+    runs-on: ubuntu-latest
+    needs: [generate-release]
+    steps:
+      - name: Download Windows Artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: ccjob-win64
+
+      - name: Upload Windows Artifacts as Release Assets
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.generate-release.outputs.release-upload-url }}
+          asset_path: ccjob-win64.zip
+          asset_name: ccjob-win64.zip
+          asset_content_type: application/zip

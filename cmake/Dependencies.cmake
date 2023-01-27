@@ -1,0 +1,32 @@
+set(MKL_ARCH "intel64")
+set(MKL_LINK "static")
+set(MKL_THREADING "sequential")
+set(MKL_INTERFACE "ilp64")
+set(MKL_MPI "intelmpi")
+set(Boost_NO_WARN_NEW_VERSIONS 1)
+
+find_package(MPI          REQUIRED COMPONENTS CXX)
+find_package(OpenMP       REQUIRED COMPONENTS CXX)
+find_package(MKL          CONFIG REQUIRED COMPONENTS CXX)
+find_package(TBB          CONFIG REQUIRED)
+find_package(fmt          CONFIG REQUIRED)
+find_package(spdlog       CONFIG REQUIRED)
+find_package(GTest        CONFIG REQUIRED)
+
+set(CCJOB_INCLUDE_DIR
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+    $<TARGET_PROPERTY:OpenMP::OpenMP_CXX,INTERFACE_INCLUDE_DIRECTORIES>
+    $<TARGET_PROPERTY:MPI::MPI_CXX,INTERFACE_INCLUDE_DIRECTORIES>
+    $<TARGET_PROPERTY:MKL::MKL,INTERFACE_INCLUDE_DIRECTORIES>
+    $<TARGET_PROPERTY:TBB::tbb,INTERFACE_INCLUDE_DIRECTORIES>
+    ${EXPRTK_INCLUDE_DIRS}
+)
+
+set(CCJOB_LINK_LIBRARY
+    $<LINK_ONLY:OpenMP::OpenMP_CXX>
+    $<LINK_ONLY:MPI::MPI_CXX>
+    $<LINK_ONLY:MKL::MKL>
+    $<LINK_ONLY:TBB::tbb>
+    $<LINK_ONLY:fmt::fmt>
+    $<LINK_ONLY:spdlog::spdlog>
+)
